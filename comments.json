@@ -1,0 +1,16 @@
+{
+  "total": {
+    "MAR": {
+      "kpis": "Revisar ventas"
+    }
+  },
+  "liquidos": {
+    "FEB": {
+      "kpis": "Disminuyó la venta ya que febrero tiene menos días que enero"
+    },
+    "global": {
+      "trend": "Febrero tuvo una caida por la disminucion de dias del periodo vs enero\nMarzo tuvo una recuperación de ventas vs febrero porque se tuvieron más días de venta.",
+      "composition": "El mix de venta de productos con menor margen como blanqueador 1 diluyeron parte del Ebitda "
+    }
+  }
+}
