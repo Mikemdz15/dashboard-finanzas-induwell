@@ -263,7 +263,7 @@ export default function Dashboard() {
           ? (item.type === 'Maquila' ? 'text-emerald-500' : item.type === 'Comercialización' ? 'text-amber-500' : item.type === 'Otros' ? 'text-slate-500' : 'text-indigo-500')
           : 'group-hover:text-slate-700 dark:group-hover:text-slate-300'
       }`}>
-        {React.cloneElement(iconMap[item.icon] as React.ReactElement, { className: "w-5 h-5 mr-0" }) || <ShoppingBag className="w-5 h-5" />}
+        {iconMap[item.icon] ? React.cloneElement(iconMap[item.icon] as React.ReactElement<any>, { className: "w-5 h-5 mr-0" }) : <ShoppingBag className="w-5 h-5 mr-0" />}
       </div>
       <div className="flex flex-col overflow-hidden">
         <span className="truncate leading-tight">{item.name}</span>
@@ -486,8 +486,8 @@ export default function Dashboard() {
         borderColor: 'rgba(255, 255, 255, 0.1)',
         borderWidth: 1,
         cornerRadius: 12,
-        titleFont: { family: 'Outfit', size: 12, weight: 'normal' },
-        bodyFont: { family: 'Outfit', size: 14, weight: 'bold' },
+        titleFont: { family: 'Outfit', size: 12, weight: 'normal' as const },
+        bodyFont: { family: 'Outfit', size: 14, weight: 'bold' as const },
         displayColors: true,
         usePointStyle: true,
         boxPadding: 8,
@@ -874,7 +874,7 @@ export default function Dashboard() {
               </div>
               
               <div className="relative z-10 w-full" style={{ height: '300px' }}>
-                <Bar data={expensesData} options={expensesOptions as any} />
+                <Bar data={expensesData as any} options={expensesOptions as any} />
               </div>
               
               <div className="mt-6 overflow-x-auto relative z-10">
