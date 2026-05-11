@@ -56,51 +56,58 @@ const iconMap: Record<string, React.ReactNode> = {
   "shopping-bag": <ShoppingBag className="w-5 h-5 mr-3" />
 };
 
-const CommentBox = ({ businessUnit, period, id, initialText, onSave, label, className }: any) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [text, setText] = useState(initialText || '');
+const CommentBox = ({ businessUnit, period, id, commentsList, onSave, label, className, userName }: any) => {
+  const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    setText(initialText || '');
-  }, [initialText, businessUnit, period]);
-
   const handleSave = async () => {
+    if (!text.trim() || !userName) return;
     setIsSaving(true);
-    await onSave(businessUnit, period, id, text);
+    await onSave(businessUnit, period, id, text, userName);
+    setText('');
     setIsSaving(false);
-    setIsEditing(false);
   };
 
   return (
     <div className={className || "mt-5 pt-4 border-t border-slate-200 dark:border-slate-800"}>
       <div className="flex justify-between items-center mb-3">
-        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 font-outfit">{label || 'Comentarios de Dirección'}</h4>
-        {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
-            {text ? '✎ Editar' : '+ Añadir Comentario'}
-          </button>
+        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 font-outfit">{label || 'Comentarios del Equipo'}</h4>
+      </div>
+      
+      {/* Chat History */}
+      <div className="space-y-3 mb-4 max-h-48 overflow-y-auto pr-2">
+        {(!commentsList || commentsList.length === 0) ? (
+          <span className="italic text-xs text-slate-400 dark:text-slate-600">Sin comentarios registrados.</span>
         ) : (
-          <div className="space-x-3">
-            <button onClick={() => setIsEditing(false)} className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancelar</button>
-            <button onClick={handleSave} disabled={isSaving} className="text-xs font-medium bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-              {isSaving ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
+          commentsList.map((c: any, idx: number) => (
+            <div key={idx} className="bg-slate-50 dark:bg-[#1E293B] p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{c.user_name}</span>
+                <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
+              </div>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{c.text}</p>
+            </div>
+          ))
         )}
       </div>
-      {isEditing ? (
+
+      {/* Input Area */}
+      <div className="relative">
         <textarea 
-          className="w-full bg-white dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[100px] outline-none resize-y"
+          className="w-full bg-white dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg p-3 pr-24 text-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[60px] outline-none resize-y"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Escribe el plan de acción, meta o comentario directivo para este bloque..."
+          placeholder="Escribe un comentario..."
+          disabled={isSaving}
         />
-      ) : (
-        <div className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
-          {text || <span className="italic text-slate-400 dark:text-slate-600">Sin comentarios registrados.</span>}
-        </div>
-      )}
+        <button 
+          onClick={handleSave} 
+          disabled={isSaving || !text.trim()} 
+          className="absolute bottom-3 right-3 text-xs font-medium bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        >
+          {isSaving ? '...' : 'Enviar'}
+        </button>
+      </div>
     </div>
   );
 };
@@ -124,11 +131,47 @@ export default function Dashboard() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [comments, setComments] = useState<any>({});
 
+  // Identity State
+  const [userName, setUserName] = useState<string>('');
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [showLogin, setShowLogin] = useState<boolean>(true);
+  const [loginNameInput, setLoginNameInput] = useState('');
+  const [loginPinInput, setLoginPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('induwell_username');
+    const savedRole = localStorage.getItem('induwell_role');
+    if (savedName) {
+      setUserName(savedName);
+      setIsAdmin(savedRole === 'admin');
+      setShowLogin(false);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    if (!loginNameInput.trim()) return;
+    if (loginNameInput.trim().toLowerCase() === 'admin' || loginNameInput.trim().toLowerCase() === 'administrador') {
+      if (loginPinInput !== '1234') {
+        setPinError(true);
+        return;
+      }
+      setIsAdmin(true);
+      localStorage.setItem('induwell_role', 'admin');
+    } else {
+      setIsAdmin(false);
+      localStorage.setItem('induwell_role', 'user');
+    }
+    setUserName(loginNameInput.trim());
+    localStorage.setItem('induwell_username', loginNameInput.trim());
+    setShowLogin(false);
+  };
+
   // AI State
   const [aiAnalysis, setAiAnalysis] = useState<Record<string, string>>({});
   const [isAnalyzing, setIsAnalyzing] = useState<Record<string, boolean>>({});
 
-  const generateAnalysis = async (tabId: string, period: string, currentData: any) => {
+  const generateAnalysis = async (tabId: string, period: string, currentData: any, isRegen = false) => {
     const analysisKey = `${tabId}-${period}`;
     setIsAnalyzing(prev => ({ ...prev, [analysisKey]: true }));
     try {
@@ -138,7 +181,8 @@ export default function Dashboard() {
         body: JSON.stringify({ 
           data: currentData, 
           period: period,
-          businessComments: comments[tabId] || {}
+          tabId: tabId,
+          regenerate: isRegen
         })
       });
       const result = await response.json();
@@ -154,6 +198,22 @@ export default function Dashboard() {
       setIsAnalyzing(prev => ({ ...prev, [analysisKey]: false }));
     }
   };
+
+  // Fetch AI Analysis automatically if it exists in Supabase
+  useEffect(() => {
+    if (!activeTab || !selectedPeriod) return;
+    const analysisKey = `${activeTab}-${selectedPeriod}`;
+    if (aiAnalysis[analysisKey]) return;
+
+    fetch(`/api/analyze?businessUnit=${activeTab}&period=${selectedPeriod}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.analysis) {
+          setAiAnalysis(prev => ({ ...prev, [analysisKey]: data.analysis }));
+        }
+      })
+      .catch(err => console.error("Error fetching AI analysis:", err));
+  }, [activeTab, selectedPeriod]);
 
   useEffect(() => {
     fetch('/api/sync')
@@ -185,12 +245,12 @@ export default function Dashboard() {
       .catch(err => console.error("Error fetching comments:", err));
   }, []);
 
-  const saveComment = async (businessUnit: string, period: string, id: string, text: string) => {
+  const saveComment = async (businessUnit: string, period: string, id: string, text: string, user_name: string) => {
     try {
       const res = await fetch('/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessUnit, period, id, text })
+        body: JSON.stringify({ businessUnit, period, id, text, userName: user_name })
       });
       const data = await res.json();
       if(data.success) {
@@ -762,7 +822,8 @@ export default function Dashboard() {
                 businessUnit={activeTab} 
                 period={selectedPeriod} 
                 id="kpis" 
-                initialText={comments?.[activeTab]?.[selectedPeriod]?.['kpis']} 
+                commentsList={comments?.[activeTab]?.[selectedPeriod]?.['kpis']} 
+                userName={userName}
                 onSave={saveComment}
                 label={`Comentarios Mensuales de Dirección - ${selectedPeriod}`}
                 className=""
@@ -782,15 +843,26 @@ export default function Dashboard() {
                       {aiAnalysis[analysisKey] ? `Análisis Clínico (IA) - ${selectedPeriod}` : `Análisis Inteligente - ${selectedPeriod}`}
                     </h3>
                   </div>
-                  {!aiAnalysis[analysisKey] && !isAnalyzing[analysisKey] && (
-                    <button 
-                      onClick={() => generateAnalysis(activeTab, selectedPeriod, data)}
-                      className="flex items-center space-x-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm dark:shadow-[0_0_15px_rgba(79,70,229,0.4)]"
-                    >
-                      <Wand2 className="w-4 h-4" />
-                      <span>Generar CFO Insights</span>
-                    </button>
-                  )}
+                  <div className="flex space-x-2">
+                    {!aiAnalysis[analysisKey] && !isAnalyzing[analysisKey] && isAdmin && (
+                      <button 
+                        onClick={() => generateAnalysis(activeTab, selectedPeriod, data)}
+                        className="flex items-center space-x-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm dark:shadow-[0_0_15px_rgba(79,70,229,0.4)]"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        <span>Generar CFO Insights</span>
+                      </button>
+                    )}
+                    {aiAnalysis[analysisKey] && !isAnalyzing[analysisKey] && isAdmin && (
+                      <button 
+                        onClick={() => generateAnalysis(activeTab, selectedPeriod, data, true)}
+                        className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-200 dark:border-slate-700"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        <span>Regenerar con Comentarios</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               
               {isAnalyzing[analysisKey] ? (
@@ -833,7 +905,8 @@ export default function Dashboard() {
                   businessUnit={activeTab} 
                   period="global" 
                   id="trend" 
-                  initialText={comments?.[activeTab]?.['global']?.['trend']} 
+                  commentsList={comments?.[activeTab]?.['global']?.['trend']} 
+                  userName={userName}
                   onSave={saveComment}
                   label="Metas y Plan de Acción (Global)"
                 />
@@ -857,7 +930,8 @@ export default function Dashboard() {
                     businessUnit={activeTab} 
                     period="global" 
                     id="trendCost" 
-                    initialText={comments?.[activeTab]?.['global']?.['trendCost']} 
+                    commentsList={comments?.[activeTab]?.['global']?.['trendCost']} 
+                    userName={userName}
                     onSave={saveComment}
                     label="Metas y Plan de Acción (Costo)"
                   />
@@ -882,7 +956,8 @@ export default function Dashboard() {
                   businessUnit={activeTab} 
                   period="global" 
                   id="composition" 
-                  initialText={comments?.[activeTab]?.['global']?.['composition']} 
+                  commentsList={comments?.[activeTab]?.['global']?.['composition']} 
+                  userName={userName}
                   onSave={saveComment}
                   label="Metas y Plan de Acción (Global)"
                 />
@@ -906,7 +981,8 @@ export default function Dashboard() {
                 businessUnit={activeTab} 
                 period="global" 
                 id="pnl" 
-                initialText={comments?.[activeTab]?.['global']?.['pnl']} 
+                commentsList={comments?.[activeTab]?.['global']?.['pnl']} 
+                userName={userName}
                 onSave={saveComment}
                 label="Metas y Plan de Acción (Global)"
               />
@@ -993,7 +1069,8 @@ export default function Dashboard() {
                 businessUnit={activeTab} 
                 period={selectedPeriod} 
                 id={`expenses_${activeExpense}`}
-                initialText={comments?.[activeTab]?.[selectedPeriod]?.[`expenses_${activeExpense}`]} 
+                commentsList={comments?.[activeTab]?.[selectedPeriod]?.[`expenses_${activeExpense}`]} 
+                userName={userName}
                 onSave={saveComment}
                 label={`Plan de Acción (${activeExpense.charAt(0).toUpperCase() + activeExpense.slice(1)})`}
               />
@@ -1020,6 +1097,53 @@ export default function Dashboard() {
           <div className="flex-1" onClick={() => setMobileMenuOpen(false)}></div>
         </div>
       )}
+
+      {/* Login Modal */}
+      {showLogin && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200 dark:border-slate-800">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 font-outfit">Identidad de Usuario</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Por favor ingresa tu nombre para participar en los análisis de Induwell.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre</label>
+                <input 
+                  type="text" 
+                  value={loginNameInput}
+                  onChange={(e) => setLoginNameInput(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#0B0F19] border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="Ej. Miguel Mendez"
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                />
+              </div>
+              
+              {(loginNameInput.trim().toLowerCase() === 'admin' || loginNameInput.trim().toLowerCase() === 'administrador') && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PIN de Administrador</label>
+                  <input 
+                    type="password" 
+                    value={loginPinInput}
+                    onChange={(e) => { setLoginPinInput(e.target.value); setPinError(false); }}
+                    className={`w-full bg-slate-50 dark:bg-[#0B0F19] border ${pinError ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                    placeholder="****"
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  />
+                  {pinError && <p className="text-rose-500 text-xs mt-1">PIN incorrecto</p>}
+                </div>
+              )}
+              
+              <button 
+                onClick={handleLogin}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition-colors mt-2"
+              >
+                Ingresar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
