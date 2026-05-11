@@ -157,6 +157,9 @@ export default function Dashboard() {
   const [loginNameInput, setLoginNameInput] = useState('');
   const [loginPinInput, setLoginPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [usersList, setUsersList] = useState<{name: string, isBanned: boolean}[]>([]);
 
   useEffect(() => {
     const savedName = localStorage.getItem('induwell_username');
@@ -168,9 +171,59 @@ export default function Dashboard() {
     }
   }, []);
 
-  const handleLogin = () => {
-    if (!loginNameInput.trim()) return;
-    if (loginNameInput.trim().toLowerCase() === 'admin' || loginNameInput.trim().toLowerCase() === 'administrador') {
+  useEffect(() => {
+    if (isAdmin && showAdminPanel) {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUsersList(data.users);
+          }
+        });
+    }
+  }, [isAdmin, showAdminPanel]);
+
+  const toggleUserBan = async (userName: string, isBanned: boolean) => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: isBanned ? 'unban' : 'ban', userName })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsersList(data.users);
+      }
+    } catch (error) {
+      console.error("Error toggling ban:", error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('induwell_username');
+    localStorage.removeItem('induwell_role');
+    setUserName('');
+    setIsAdmin(false);
+    setShowLogin(true);
+  };
+
+  const handleLogin = async () => {
+    const inputName = loginNameInput.trim();
+    if (!inputName) return;
+    setLoginError('');
+
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      if (data.success && data.banned && data.banned.includes(inputName)) {
+        setLoginError('Usuario suspendido por el administrador.');
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking ban status", e);
+    }
+
+    if (inputName.toLowerCase() === 'admin' || inputName.toLowerCase() === 'administrador') {
       if (loginPinInput !== '1234') {
         setPinError(true);
         return;
@@ -181,8 +234,8 @@ export default function Dashboard() {
       setIsAdmin(false);
       localStorage.setItem('induwell_role', 'user');
     }
-    setUserName(loginNameInput.trim());
-    localStorage.setItem('induwell_username', loginNameInput.trim());
+    setUserName(inputName);
+    localStorage.setItem('induwell_username', inputName);
     setShowLogin(false);
   };
 
@@ -821,8 +874,19 @@ export default function Dashboard() {
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Exportar Reporte">
-              <Download className="w-5 h-5" />
+            {isAdmin && (
+              <button 
+                onClick={() => setShowAdminPanel(true)}
+                className="hidden sm:inline-flex px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg transition-colors items-center"
+              >
+                👥 Panel de Usuarios
+              </button>
+            )}
+            <button 
+              onClick={handleLogout}
+              className="px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+            >
+              Cerrar Sesión
             </button>
           </div>
         </header>
@@ -1144,6 +1208,54 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Admin Panel Modal */}
+      {showAdminPanel && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200 dark:border-slate-800 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white font-outfit">Panel de Administración de Usuarios</h2>
+              <button onClick={() => setShowAdminPanel(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2">
+              <div className="space-y-3">
+                {usersList.length === 0 ? (
+                  <p className="text-slate-500 text-center py-8">No hay usuarios registrados aún.</p>
+                ) : (
+                  usersList.map((user, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-[#0B0F19] rounded-lg border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`font-medium ${user.isBanned ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                          {user.name}
+                        </span>
+                        {user.isBanned && (
+                          <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">BLOQUEADO</span>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => toggleUserBan(user.name, user.isBanned)}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                          user.isBanned 
+                            ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300' 
+                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20'
+                        }`}
+                      >
+                        {user.isBanned ? 'Desbloquear' : 'Bloquear Acceso'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Login Modal */}
       {showLogin && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1185,6 +1297,7 @@ export default function Dashboard() {
               >
                 Ingresar
               </button>
+              {loginError && <p className="text-rose-500 text-sm text-center mt-2 font-medium">{loginError}</p>}
             </div>
           </div>
         </div>
