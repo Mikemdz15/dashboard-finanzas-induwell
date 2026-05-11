@@ -56,9 +56,10 @@ const iconMap: Record<string, React.ReactNode> = {
   "shopping-bag": <ShoppingBag className="w-5 h-5 mr-3" />
 };
 
-const CommentBox = ({ businessUnit, period, id, commentsList, onSave, label, className, userName }: any) => {
+const CommentBox = ({ businessUnit, period, id, commentsList, onSave, onDelete, label, className, userName, isAdmin }: any) => {
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!text.trim() || !userName) return;
@@ -66,6 +67,13 @@ const CommentBox = ({ businessUnit, period, id, commentsList, onSave, label, cla
     await onSave(businessUnit, period, id, text, userName);
     setText('');
     setIsSaving(false);
+  };
+
+  const handleDelete = async (commentId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este comentario?')) return;
+    setIsDeletingId(commentId);
+    await onDelete(commentId);
+    setIsDeletingId(null);
   };
 
   return (
@@ -82,8 +90,19 @@ const CommentBox = ({ businessUnit, period, id, commentsList, onSave, label, cla
           commentsList.map((c: any, idx: number) => (
             <div key={idx} className="bg-slate-50 dark:bg-[#1E293B] p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{c.user_name}</span>
-                <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{c.user_name}</span>
+                  <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
+                </div>
+                {(isAdmin || userName === c.user_name) && (
+                  <button 
+                    onClick={() => handleDelete(c.id)} 
+                    disabled={isDeletingId === c.id}
+                    className="text-[10px] text-rose-500 hover:text-rose-700 font-medium disabled:opacity-50"
+                  >
+                    {isDeletingId === c.id ? '...' : 'Eliminar'}
+                  </button>
+                )}
               </div>
               <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{c.text}</p>
             </div>
@@ -255,10 +274,31 @@ export default function Dashboard() {
       const data = await res.json();
       if(data.success) {
         setComments(data.comments);
+      } else {
+        alert("Error de guardado: " + data.error);
       }
     } catch (err) {
       console.error("Error saving comment:", err);
       alert("No se pudo guardar el comentario.");
+    }
+  };
+
+  const deleteComment = async (commentUuid: string) => {
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: commentUuid })
+      });
+      const data = await res.json();
+      if(data.success) {
+        setComments(data.comments);
+      } else {
+        alert("Error al eliminar: " + data.error);
+      }
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+      alert("No se pudo eliminar el comentario.");
     }
   };
 
@@ -824,7 +864,9 @@ export default function Dashboard() {
                 id="kpis" 
                 commentsList={comments?.[activeTab]?.[selectedPeriod]?.['kpis']} 
                 userName={userName}
+                isAdmin={isAdmin}
                 onSave={saveComment}
+                onDelete={deleteComment}
                 label={`Comentarios Mensuales de Dirección - ${selectedPeriod}`}
                 className=""
               />
@@ -983,7 +1025,9 @@ export default function Dashboard() {
                 id="pnl" 
                 commentsList={comments?.[activeTab]?.['global']?.['pnl']} 
                 userName={userName}
+                isAdmin={isAdmin}
                 onSave={saveComment}
+                onDelete={deleteComment}
                 label="Metas y Plan de Acción (Global)"
               />
             </div>
@@ -1071,7 +1115,9 @@ export default function Dashboard() {
                 id={`expenses_${activeExpense}`}
                 commentsList={comments?.[activeTab]?.[selectedPeriod]?.[`expenses_${activeExpense}`]} 
                 userName={userName}
+                isAdmin={isAdmin}
                 onSave={saveComment}
+                onDelete={deleteComment}
                 label={`Plan de Acción (${activeExpense.charAt(0).toUpperCase() + activeExpense.slice(1)})`}
               />
             </div>
