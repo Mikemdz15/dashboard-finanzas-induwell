@@ -325,6 +325,50 @@ export default function Dashboard() {
     ]
   };
 
+  // Calculation of labels with MoM for Trend Cost
+  const trendCostLabelsWithMom = subsidiaryData.charts.trendCost ? subsidiaryData.charts.trendCost.labels.map((label: string, idx: number) => {
+    const val = subsidiaryData.charts.trendCost.real[idx];
+    const prevVal = idx > 0 ? subsidiaryData.charts.trendCost.real[idx - 1] : null;
+    
+    if (val !== null && val !== undefined && prevVal !== null && prevVal !== undefined && prevVal !== 0) {
+      const mom = ((val - prevVal) / Math.abs(prevVal)) * 100;
+      if (mom === 0) return [label, ''];
+      const sign = mom > 0 ? '+' : '';
+      const momStr = `${sign}${mom.toFixed(1)}%`;
+      return [label, momStr];
+    }
+    return [label, ''];
+  }) : [];
+
+  const trendCostData = subsidiaryData.charts.trendCost ? {
+    labels: trendCostLabelsWithMom,
+    datasets: [
+      {
+        label: 'Costo Real (M)',
+        data: subsidiaryData.charts.trendCost.real,
+        borderColor: themeColors.rose,
+        backgroundColor: 'rgba(244, 63, 94, 0.15)',
+        borderWidth: 3,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: themeColors.rose,
+        pointRadius: 4,
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Proyección Costo (M)',
+        data: subsidiaryData.charts.trendCost.proy,
+        borderColor: themeColors.amber,
+        borderDash: [5, 5],
+        borderWidth: 3,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: themeColors.amber,
+        pointRadius: 4,
+        tension: 0.4
+      }
+    ]
+  } : null;
+
   const ebitdaLabelsWithMom = subsidiaryData.charts.composition.type !== 'doughnut' ? subsidiaryData.charts.composition.labels.map((label: string, idx: number) => {
     const val = subsidiaryData.charts.composition.data[idx];
     const prevVal = idx > 0 ? subsidiaryData.charts.composition.data[idx - 1] : null;
@@ -794,6 +838,31 @@ export default function Dashboard() {
                   label="Metas y Plan de Acción (Global)"
                 />
               </div>
+
+              {/* Chart: Tendencias de Costo */}
+              {subsidiaryData.charts.trendCost && trendCostData && (
+                <div className="bg-white dark:bg-[#111827] rounded-xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col relative overflow-hidden transition-colors duration-300">
+                  <div className="hidden dark:block absolute top-0 right-0 w-64 h-64 bg-rose-500/5 blur-[60px] pointer-events-none rounded-full"></div>
+                  <div className="flex justify-between items-center mb-4 relative z-10">
+                    <h3 className="text-base font-semibold text-slate-800 dark:text-white font-outfit tracking-wide">Tendencia de Costo de Ventas</h3>
+                    <TrendingUp className="text-slate-400 dark:text-slate-500 w-5 h-5" />
+                  </div>
+                  <div className="relative flex-1 z-10" style={{ minHeight: '300px' }}>
+                    <Line data={trendCostData} options={momTickOptions as any} />
+                  </div>
+                  <div className="mt-4 p-3 bg-slate-50 dark:bg-[#1E293B] rounded-lg border border-slate-100 dark:border-slate-700/50 relative z-10">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed [&_strong]:text-rose-600 dark:[&_strong]:text-rose-400" dangerouslySetInnerHTML={{ __html: subsidiaryData.charts.trendCost.desc }} />
+                  </div>
+                  <CommentBox 
+                    businessUnit={activeTab} 
+                    period="global" 
+                    id="trendCost" 
+                    initialText={comments?.[activeTab]?.['global']?.['trendCost']} 
+                    onSave={saveComment}
+                    label="Metas y Plan de Acción (Costo)"
+                  />
+                </div>
+              )}
               
               {/* Chart: Composición */}
               <div className="bg-white dark:bg-[#111827] rounded-xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col relative overflow-hidden transition-colors duration-300">

@@ -150,6 +150,7 @@ export async function GET() {
 
         // Extraer métricas mensuales dinámicas
         const monthlyVentas: number[] = [];
+        const monthlyCosto: number[] = [];
         const monthlyUtilidad: number[] = [];
         const monthlySueldos: number[] = [];
         const monthlyEnergia: number[] = [];
@@ -192,6 +193,7 @@ export async function GET() {
             mGastos = mGastos || (mFijos + mVariables);
 
             monthlyVentas.push(mVentas);
+            monthlyCosto.push(mCosto);
             monthlyUtilidad.push(mUtilidad);
             monthlySueldos.push(mSueldos);
             monthlyEnergia.push(mEnergia);
@@ -217,6 +219,11 @@ export async function GET() {
                   labels: [prettyName], 
                   real: [mVentas/1000],
                   desc: `<strong>Diagnóstico Clínico ${prettyName} (Tendencia):</strong> El volumen de ventas en ${prettyName} presenta su comportamiento real aislado de la estacionalidad acumulada. Se recomienda monitorear posibles picos o caídas en la demanda comercial para este periodo específico frente al presupuesto mensual.`
+                },
+                trendCost: {
+                  labels: [prettyName], 
+                  real: [mCosto/1000],
+                  desc: `<strong>Diagnóstico Clínico ${prettyName} (Costo):</strong> El volumen de costo de ventas en ${prettyName} presenta su comportamiento real. Se recomienda monitorear posibles variaciones respecto al presupuesto mensual.`
                 },
                 composition: {
                   type: 'bar',
@@ -256,20 +263,26 @@ export async function GET() {
         // Cálculo de MoM
         let lastVentas = 0, prevVentas = 0;
         let lastEbitda = 0, prevEbitda = 0;
+        let lastCosto = 0, prevCosto = 0;
         let momVentasDesc = '<span class="text-slate-500">N/A</span>';
         let momEbitdaDesc = '<span class="text-slate-500">N/A</span>';
+        let momCostoDesc = '<span class="text-slate-500">N/A</span>';
 
         if (monthlyVentas.length >= 2) {
           lastVentas = monthlyVentas[monthlyVentas.length - 1];
           prevVentas = monthlyVentas[monthlyVentas.length - 2];
           lastEbitda = monthlyUtilidad[monthlyUtilidad.length - 1];
           prevEbitda = monthlyUtilidad[monthlyUtilidad.length - 2];
+          lastCosto = monthlyCosto[monthlyCosto.length - 1];
+          prevCosto = monthlyCosto[monthlyCosto.length - 2];
           
           const vtasGrowth = prevVentas ? ((lastVentas - prevVentas) / prevVentas) * 100 : 0;
           const ebitdaGrowth = prevEbitda ? ((lastEbitda - prevEbitda) / Math.abs(prevEbitda)) * 100 : 0;
+          const costoGrowth = prevCosto ? ((lastCosto - prevCosto) / prevCosto) * 100 : 0;
           
           momVentasDesc = vtasGrowth >= 0 ? `<span class="text-emerald-600 font-semibold">+${vtasGrowth.toFixed(1)}%</span>` : `<span class="text-rose-600 font-semibold">${vtasGrowth.toFixed(1)}%</span>`;
           momEbitdaDesc = ebitdaGrowth >= 0 ? `<span class="text-emerald-600 font-semibold">+${ebitdaGrowth.toFixed(1)}%</span>` : `<span class="text-rose-600 font-semibold">${ebitdaGrowth.toFixed(1)}%</span>`;
+          momCostoDesc = costoGrowth <= 0 ? `<span class="text-emerald-600 font-semibold">${costoGrowth.toFixed(1)}%</span>` : `<span class="text-rose-600 font-semibold">+${costoGrowth.toFixed(1)}%</span>`;
         }
 
         // Proyección de 3 meses
@@ -279,6 +292,7 @@ export async function GET() {
         const nextLabels: string[] = [];
         const nextVentasProy: (number|null)[] = [];
         const nextEbitdaProy: number[] = [];
+        const nextCostoProy: (number|null)[] = [];
 
         for (let i = 1; i <= 3; i++) {
           const nextIdx = lastMonthIndex + i;
@@ -286,12 +300,16 @@ export async function GET() {
             nextLabels.push(`${fullMonthNames[nextIdx]} (Proy)`);
             nextVentasProy.push(avgVentas / 1000);
             nextEbitdaProy.push(avgEbitda / 1000);
+            nextCostoProy.push(avgCosto / 1000);
           }
         }
 
         const trendLabels = [...validMonths.map(m => `${fullMonthNames[monthSheets.indexOf(m)]} (Real)`), ...nextLabels];
         const trendRealData = [...monthlyVentas.map(v => v/1000), ...Array(nextLabels.length).fill(null)];
         const trendProyData = monthlyVentas.map((v, i) => i === monthlyVentas.length - 1 ? v/1000 : null).concat(nextVentasProy);
+
+        const trendCostRealData = [...monthlyCosto.map(c => c/1000), ...Array(nextLabels.length).fill(null)];
+        const trendCostProyData = monthlyCosto.map((c, i) => i === monthlyCosto.length - 1 ? c/1000 : null).concat(nextCostoProy);
 
         const compLabels = [...validMonths.map(m => fullMonthNames[monthSheets.indexOf(m)]), ...nextLabels];
         const compData = [...monthlyUtilidad.map(u => u/1000), ...nextEbitdaProy];
@@ -306,6 +324,12 @@ export async function GET() {
             real: trendRealData,
             proy: trendProyData,
             desc: `<strong>Diagnóstico Clínico de Crecimiento:</strong> El volumen de ventas del último mes registrado tuvo una variación de ${momVentasDesc} (MoM). Proyectando el desempeño mensual consolidado, se estima que la línea de facturación generará <strong>$${(avgVentas/1000).toFixed(1)}M</strong> recurrentes en los siguientes periodos.`
+          },
+          trendCost: {
+            labels: trendLabels,
+            real: trendCostRealData,
+            proy: trendCostProyData,
+            desc: `<strong>Diagnóstico Clínico de Costo:</strong> El costo de ventas del último mes registrado tuvo una variación de ${momCostoDesc} (MoM). Proyectando el desempeño mensual, se estima que el costo representará <strong>$${(avgCosto/1000).toFixed(1)}M</strong> recurrentes en los siguientes periodos.`
           },
           composition: {
             type: 'bar',
