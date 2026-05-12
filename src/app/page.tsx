@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, FlaskConical, Globe, Sparkles, Flame, Wheat, ShoppingBag, 
   Menu, Download, X, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, BarChart3, BrainCircuit,
-  Loader2, Wand2, Moon, Sun
+  Loader2, Wand2, Moon, Sun, Bell, Send
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -56,10 +56,26 @@ const iconMap: Record<string, React.ReactNode> = {
   "shopping-bag": <ShoppingBag className="w-5 h-5 mr-3" />
 };
 
-const CommentBox = ({ businessUnit, period, id, commentsList, onSave, onDelete, label, className, userName, isAdmin }: any) => {
+const CommentBox = ({ businessUnit, period, id, commentsList, tasksList, onSave, onDelete, onSaveTask, onToggleTask, onDeleteTask, globalUsers, label, className, userName, isAdmin }: any) => {
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  
+  // Task state
+  const [taskText, setTaskText] = useState('');
+  const [taskAssignee, setTaskAssignee] = useState('');
+  const [isSavingTask, setIsSavingTask] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+
+  const handleSaveTask = async () => {
+    if (!taskText.trim() || !taskAssignee) return;
+    setIsSavingTask(true);
+    await onSaveTask(businessUnit, period, id, taskText, taskAssignee);
+    setTaskText('');
+    setTaskAssignee('');
+    setShowTaskForm(false);
+    setIsSavingTask(false);
+  };
 
   const handleSave = async () => {
     if (!text.trim() || !userName) return;
@@ -127,6 +143,73 @@ const CommentBox = ({ businessUnit, period, id, commentsList, onSave, onDelete, 
           {isSaving ? '...' : 'Enviar'}
         </button>
       </div>
+
+      {/* Tareas / Compromisos */}
+      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">📋 Compromisos</h4>
+          <button onClick={() => setShowTaskForm(!showTaskForm)} className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Añadir Compromiso</button>
+        </div>
+        
+        {tasksList && tasksList.map((t: any) => (
+          <div key={t.id} className="flex items-start mb-2 group">
+            <input 
+              type="checkbox" 
+              checked={t.completed} 
+              onChange={() => onToggleTask(t.id, !t.completed)}
+              disabled={t.assignee !== userName && !isAdmin}
+              className="mt-1 mr-2 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 disabled:opacity-50" 
+            />
+            <div className="flex-1">
+              <p className={`text-sm ${t.completed ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                {t.text}
+              </p>
+              <div className="flex items-center space-x-2 mt-0.5">
+                <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-medium">Asignado a: {t.assignee}</span>
+                <span className="text-[9px] text-slate-400">Por: {t.created_by}</span>
+                {(isAdmin || t.created_by === userName || t.assignee === userName) && (
+                   <button onClick={() => onDeleteTask(t.id)} className="text-[9px] text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">Eliminar</button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {showTaskForm && (
+          <div className="mt-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800">
+            <select 
+              value={taskAssignee} 
+              onChange={e => setTaskAssignee(e.target.value)}
+              className="w-full mb-2 p-1.5 text-xs rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">Seleccionar Responsable...</option>
+              {globalUsers?.map((u: any) => <option key={u.name} value={u.name}>{u.name}</option>)}
+            </select>
+            <textarea
+              value={taskText}
+              onChange={e => setTaskText(e.target.value)}
+              placeholder="Descripción del compromiso..."
+              className="w-full p-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              rows={2}
+            />
+            <div className="flex justify-end mt-2">
+              <button 
+                onClick={() => { setShowTaskForm(false); setTaskText(''); setTaskAssignee(''); }}
+                className="mr-2 px-3 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveTask}
+                disabled={isSavingTask || !taskText.trim() || !taskAssignee}
+                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-50"
+              >
+                {isSavingTask ? '...' : 'Guardar Compromiso'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -160,6 +243,13 @@ export default function Dashboard() {
   const [loginError, setLoginError] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [usersList, setUsersList] = useState<{name: string, isBanned: boolean}[]>([]);
+  const [globalUsers, setGlobalUsers] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Record<string, any>>({});
+  const [rawTasks, setRawTasks] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Compute pending tasks for current user
+  const pendingTasks = rawTasks.filter(t => t.assignee === userName && !t.completed);
 
   useEffect(() => {
     const savedName = localStorage.getItem('induwell_username');
@@ -352,6 +442,62 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Error deleting comment:", err);
       alert("No se pudo eliminar el comentario.");
+    }
+  };
+
+  const saveTask = async (businessUnit: string, period: string, id: string, text: string, assignee: string) => {
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessUnit, period, id, text, assignee, createdBy: userName })
+      });
+      const data = await res.json();
+      if(data.success) {
+        setTasks(data.tasks);
+        setRawTasks(data.rawTasks);
+      } else {
+        alert("Error de guardado: " + data.error);
+      }
+    } catch (err) {
+      console.error("Error saving task:", err);
+      alert("No se pudo guardar el compromiso.");
+    }
+  };
+
+  const toggleTask = async (taskId: string, completed: boolean) => {
+    setRawTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed } : t));
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, completed })
+      });
+      const data = await res.json();
+      if(data.success) {
+        setTasks(data.tasks);
+        setRawTasks(data.rawTasks);
+      }
+    } catch (err) {
+      console.error("Error toggling task:", err);
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este compromiso?')) return;
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId })
+      });
+      const data = await res.json();
+      if(data.success) {
+        setTasks(data.tasks);
+        setRawTasks(data.rawTasks);
+      }
+    } catch (err) {
+      console.error("Error deleting task:", err);
     }
   };
 
@@ -867,6 +1013,48 @@ export default function Dashboard() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 mr-2 animate-pulse dark:shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
               Live Sync
             </span>
+
+            {/* Notifications Bell */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors relative mt-1"
+                title="Notificaciones"
+              >
+                <Bell className="w-5 h-5" />
+                {pendingTasks.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-[#0B0F19]"></span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#111827] rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden">
+                  <div className="p-3 bg-slate-50 dark:bg-[#0B0F19] border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm font-outfit">Mis Compromisos</h3>
+                    <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {pendingTasks.length} pendientes
+                    </span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {pendingTasks.length === 0 ? (
+                      <div className="p-6 text-center text-slate-500 text-sm">
+                        No tienes tareas pendientes. ¡Excelente!
+                      </div>
+                    ) : (
+                      pendingTasks.map((t: any) => (
+                        <div key={t.id} className="p-3 border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-[#1E293B]/50 transition-colors text-left">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 mb-1 leading-snug">{t.text}</p>
+                          <div className="flex justify-between items-center text-[10px] text-slate-500">
+                            <span>Por: {t.created_by}</span>
+                            <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase tracking-wider">{t.business_unit}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" 
@@ -927,10 +1115,15 @@ export default function Dashboard() {
                 period={selectedPeriod} 
                 id="kpis" 
                 commentsList={comments?.[activeTab]?.[selectedPeriod]?.['kpis']} 
+                tasksList={tasks?.[activeTab]?.[selectedPeriod]?.['kpis']}
                 userName={userName}
                 isAdmin={isAdmin}
                 onSave={saveComment}
                 onDelete={deleteComment}
+                globalUsers={globalUsers}
+                onSaveTask={saveTask}
+                onToggleTask={toggleTask}
+                onDeleteTask={deleteTask}
                 label={`Comentarios Mensuales de Dirección - ${selectedPeriod}`}
                 className=""
               />
@@ -1088,10 +1281,15 @@ export default function Dashboard() {
                 period="global" 
                 id="pnl" 
                 commentsList={comments?.[activeTab]?.['global']?.['pnl']} 
+                tasksList={tasks?.[activeTab]?.['global']?.['pnl']}
                 userName={userName}
                 isAdmin={isAdmin}
                 onSave={saveComment}
                 onDelete={deleteComment}
+                globalUsers={globalUsers}
+                onSaveTask={saveTask}
+                onToggleTask={toggleTask}
+                onDeleteTask={deleteTask}
                 label="Metas y Plan de Acción (Global)"
               />
             </div>
@@ -1178,10 +1376,15 @@ export default function Dashboard() {
                 period={selectedPeriod} 
                 id={`expenses_${activeExpense}`}
                 commentsList={comments?.[activeTab]?.[selectedPeriod]?.[`expenses_${activeExpense}`]} 
+                tasksList={tasks?.[activeTab]?.[selectedPeriod]?.[`expenses_${activeExpense}`]}
                 userName={userName}
                 isAdmin={isAdmin}
                 onSave={saveComment}
                 onDelete={deleteComment}
+                globalUsers={globalUsers}
+                onSaveTask={saveTask}
+                onToggleTask={toggleTask}
+                onDeleteTask={deleteTask}
                 label={`Plan de Acción (${activeExpense.charAt(0).toUpperCase() + activeExpense.slice(1)})`}
               />
             </div>
