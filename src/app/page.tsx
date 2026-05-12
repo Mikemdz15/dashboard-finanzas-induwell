@@ -167,7 +167,7 @@ const CommentBox = ({ businessUnit, period, id, commentsList, tasksList, onSave,
               <div className="flex items-center space-x-2 mt-0.5">
                 <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-medium">Asignado a: {t.assignee}</span>
                 <span className="text-[9px] text-slate-400">Por: {t.created_by}</span>
-                {(isAdmin || t.created_by === userName || t.assignee === userName) && (
+                {isAdmin && (
                    <button onClick={() => onDeleteTask(t.id)} className="text-[9px] text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">Eliminar</button>
                 )}
               </div>
