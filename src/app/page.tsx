@@ -438,6 +438,28 @@ export default function Dashboard() {
         }
       })
       .catch(err => console.error("Error fetching comments:", err));
+
+    // Fetch users globally
+    fetch('/api/users')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setGlobalUsers(data.users);
+          setUsersList(data.users);
+        }
+      })
+      .catch(err => console.error("Error fetching users:", err));
+
+    // Fetch tasks globally
+    fetch('/api/tasks')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTasks(data.tasks || {});
+          setRawTasks(data.rawTasks || []);
+        }
+      })
+      .catch(err => console.error("Error fetching tasks:", err));
   }, []);
 
   const saveComment = async (businessUnit: string, period: string, id: string, text: string, user_name: string) => {
