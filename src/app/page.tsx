@@ -183,7 +183,7 @@ const CommentBox = ({ businessUnit, period, id, commentsList, tasksList, onSave,
               className="w-full mb-2 p-1.5 text-xs rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white focus:ring-1 focus:ring-indigo-500"
             >
               <option value="">Seleccionar Responsable...</option>
-              {globalUsers?.map((u: any) => <option key={u.name} value={u.name}>{u.name}</option>)}
+              {globalUsers?.map((u: any) => <option key={u.username} value={u.username}>{u.username}</option>)}
             </select>
             <textarea
               value={taskText}
@@ -238,12 +238,18 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState<boolean>(true);
   const [loginNameInput, setLoginNameInput] = useState('');
-  const [loginPinInput, setLoginPinInput] = useState('');
+  const [loginPasswordInput, setLoginPasswordInput] = useState('');
   const [pinError, setPinError] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [usersList, setUsersList] = useState<{name: string, isBanned: boolean}[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [globalUsers, setGlobalUsers] = useState<any[]>([]);
+  
+  // Admin User Creation State
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('user');
+  const [createUserError, setCreateUserError] = useState('');
   const [tasks, setTasks] = useState<Record<string, any>>({});
   const [rawTasks, setRawTasks] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -278,14 +284,42 @@ export default function Dashboard() {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: isBanned ? 'unban' : 'ban', userName })
+        body: JSON.stringify({ action: isBanned ? 'unban' : 'ban', username: userName })
       });
       const data = await res.json();
       if (data.success) {
         setUsersList(data.users);
+        setGlobalUsers(data.users);
       }
     } catch (error) {
       console.error("Error toggling ban:", error);
+    }
+  };
+
+  const createNewUser = async () => {
+    if (!newUserName.trim() || !newUserPassword.trim()) {
+      setCreateUserError('Nombre y contraseña son obligatorios');
+      return;
+    }
+    setCreateUserError('');
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', username: newUserName.trim(), password: newUserPassword.trim(), role: newUserRole })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsersList(data.users);
+        setGlobalUsers(data.users);
+        setNewUserName('');
+        setNewUserPassword('');
+        setNewUserRole('user');
+      } else {
+        setCreateUserError(data.error);
+      }
+    } catch (error) {
+      setCreateUserError('Error al crear usuario');
     }
   };
 
@@ -299,34 +333,33 @@ export default function Dashboard() {
 
   const handleLogin = async () => {
     const inputName = loginNameInput.trim();
-    if (!inputName) return;
+    if (!inputName || !loginPasswordInput.trim()) {
+      setLoginError('Ingresa usuario y contraseña.');
+      return;
+    }
     setLoginError('');
 
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: inputName, password: loginPasswordInput })
+      });
       const data = await res.json();
-      if (data.success && data.banned && data.banned.includes(inputName)) {
-        setLoginError('Usuario suspendido por el administrador.');
-        return;
+
+      if (data.success) {
+        setIsAdmin(data.user.role === 'admin');
+        setUserName(data.user.username);
+        localStorage.setItem('induwell_username', data.user.username);
+        localStorage.setItem('induwell_role', data.user.role);
+        setShowLogin(false);
+      } else {
+        setLoginError(data.error || 'Credenciales incorrectas');
       }
     } catch (e) {
-      console.error("Error checking ban status", e);
+      console.error("Error logging in", e);
+      setLoginError('Error de conexión al servidor.');
     }
-
-    if (inputName.toLowerCase() === 'admin' || inputName.toLowerCase() === 'administrador') {
-      if (loginPinInput !== '1234') {
-        setPinError(true);
-        return;
-      }
-      setIsAdmin(true);
-      localStorage.setItem('induwell_role', 'admin');
-    } else {
-      setIsAdmin(false);
-      localStorage.setItem('induwell_role', 'user');
-    }
-    setUserName(inputName);
-    localStorage.setItem('induwell_username', inputName);
-    setShowLogin(false);
   };
 
   // AI State
@@ -1443,6 +1476,36 @@ export default function Dashboard() {
               </button>
             </div>
             
+            <div className="bg-slate-50 dark:bg-[#0B0F19] p-4 rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3">Crear Nuevo Usuario</h3>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Usuario" 
+                  value={newUserName}
+                  onChange={e => setNewUserName(e.target.value)}
+                  className="flex-1 text-sm p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-900 dark:text-white"
+                />
+                <input 
+                  type="text" 
+                  placeholder="Contraseña" 
+                  value={newUserPassword}
+                  onChange={e => setNewUserPassword(e.target.value)}
+                  className="flex-1 text-sm p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-900 dark:text-white"
+                />
+                <select 
+                  value={newUserRole}
+                  onChange={e => setNewUserRole(e.target.value)}
+                  className="text-sm p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-900 dark:text-white"
+                >
+                  <option value="user">Usuario</option>
+                  <option value="admin">Administrador</option>
+                </select>
+                <button onClick={createNewUser} className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">Crear</button>
+              </div>
+              {createUserError && <p className="text-rose-500 text-xs mt-2">{createUserError}</p>}
+            </div>
+
             <div className="flex-1 overflow-y-auto pr-2">
               <div className="space-y-3">
                 {usersList.length === 0 ? (
@@ -1452,24 +1515,28 @@ export default function Dashboard() {
                     <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-[#0B0F19] rounded-lg border border-slate-100 dark:border-slate-800">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.username.charAt(0).toUpperCase()}
                         </div>
-                        <span className={`font-medium ${user.isBanned ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
-                          {user.name}
-                        </span>
-                        {user.isBanned && (
+                        <div className="flex flex-col">
+                          <span className={`font-medium text-sm ${user.is_banned ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                            {user.username}
+                          </span>
+                          <span className="text-[10px] text-slate-500 capitalize">{user.role}</span>
+                        </div>
+                        {user.is_banned && (
                           <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">BLOQUEADO</span>
                         )}
                       </div>
                       <button 
-                        onClick={() => toggleUserBan(user.name, user.isBanned)}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                          user.isBanned 
+                        onClick={() => toggleUserBan(user.username, user.is_banned)}
+                        disabled={user.username === userName}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                          user.is_banned 
                             ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300' 
                             : 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20'
                         }`}
                       >
-                        {user.isBanned ? 'Desbloquear' : 'Bloquear Acceso'}
+                        {user.is_banned ? 'Desbloquear' : 'Bloquear Acceso'}
                       </button>
                     </div>
                   ))
@@ -1500,20 +1567,17 @@ export default function Dashboard() {
                 />
               </div>
               
-              {(loginNameInput.trim().toLowerCase() === 'admin' || loginNameInput.trim().toLowerCase() === 'administrador') && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PIN de Administrador</label>
-                  <input 
-                    type="password" 
-                    value={loginPinInput}
-                    onChange={(e) => { setLoginPinInput(e.target.value); setPinError(false); }}
-                    className={`w-full bg-slate-50 dark:bg-[#0B0F19] border ${pinError ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none`}
-                    placeholder="****"
-                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  />
-                  {pinError && <p className="text-rose-500 text-xs mt-1">PIN incorrecto</p>}
-                </div>
-              )}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña</label>
+                <input 
+                  type="password" 
+                  value={loginPasswordInput}
+                  onChange={(e) => { setLoginPasswordInput(e.target.value); setPinError(false); }}
+                  className={`w-full bg-slate-50 dark:bg-[#0B0F19] border ${pinError ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none`}
+                  placeholder="Tu contraseña..."
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                />
+              </div>
               
               <button 
                 onClick={handleLogin}
