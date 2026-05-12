@@ -1205,8 +1205,15 @@ export default function Dashboard() {
                   period="global" 
                   id="trend" 
                   commentsList={comments?.[activeTab]?.['global']?.['trend']} 
+                  tasksList={tasks?.[activeTab]?.['global']?.['trend']}
                   userName={userName}
+                  isAdmin={isAdmin}
                   onSave={saveComment}
+                  onDelete={deleteComment}
+                  globalUsers={globalUsers}
+                  onSaveTask={saveTask}
+                  onToggleTask={toggleTask}
+                  onDeleteTask={deleteTask}
                   label="Metas y Plan de Acción (Global)"
                 />
               </div>
@@ -1230,8 +1237,15 @@ export default function Dashboard() {
                     period="global" 
                     id="trendCost" 
                     commentsList={comments?.[activeTab]?.['global']?.['trendCost']} 
+                    tasksList={tasks?.[activeTab]?.['global']?.['trendCost']}
                     userName={userName}
+                    isAdmin={isAdmin}
                     onSave={saveComment}
+                    onDelete={deleteComment}
+                    globalUsers={globalUsers}
+                    onSaveTask={saveTask}
+                    onToggleTask={toggleTask}
+                    onDeleteTask={deleteTask}
                     label="Metas y Plan de Acción (Costo)"
                   />
                 </div>
@@ -1256,9 +1270,16 @@ export default function Dashboard() {
                   period="global" 
                   id="composition" 
                   commentsList={comments?.[activeTab]?.['global']?.['composition']} 
+                  tasksList={tasks?.[activeTab]?.['global']?.['composition']}
                   userName={userName}
+                  isAdmin={isAdmin}
                   onSave={saveComment}
-                  label="Metas y Plan de Acción (Global)"
+                  onDelete={deleteComment}
+                  globalUsers={globalUsers}
+                  onSaveTask={saveTask}
+                  onToggleTask={toggleTask}
+                  onDeleteTask={deleteTask}
+                  label="Metas y Plan de Acción (Composición)"
                 />
               </div>
             </div>
