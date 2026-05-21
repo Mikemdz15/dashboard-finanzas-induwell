@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, FlaskConical, Globe, Sparkles, Flame, Wheat, ShoppingBag, 
   Menu, Download, X, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, BarChart3, BrainCircuit,
-  Loader2, Wand2, Moon, Sun, Bell, Send
+  Loader2, Wand2, Moon, Sun, Bell, Send, ChevronDown, ChevronUp
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -365,6 +365,7 @@ export default function Dashboard() {
   // AI State
   const [aiAnalysis, setAiAnalysis] = useState<Record<string, string>>({});
   const [isAnalyzing, setIsAnalyzing] = useState<Record<string, boolean>>({});
+  const [isAnalysisCollapsed, setIsAnalysisCollapsed] = useState<boolean>(true);
 
   const generateAnalysis = async (tabId: string, period: string, currentData: any, isRegen = false) => {
     const analysisKey = `${tabId}-${period}`;
@@ -1288,17 +1289,36 @@ export default function Dashboard() {
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-600 dark:text-indigo-500 mb-4" />
                   <p className="text-sm font-medium">El CFO Virtual está procesando el reporte clínico de {selectedPeriod}...</p>
                 </div>
-              ) : aiAnalysis[analysisKey] ? (
-                <div className="prose prose-slate dark:prose-invert prose-sm md:prose-base max-w-none text-slate-700 dark:text-slate-300">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {aiAnalysis[analysisKey]}
-                  </ReactMarkdown>
-                </div>
               ) : (
-                <div 
-                  className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base space-y-3 [&>p]:mb-2 [&_strong]:text-indigo-600 dark:[&_strong]:text-indigo-300" 
-                  dangerouslySetInnerHTML={{ __html: data.insights }} 
-                />
+                <div className="relative">
+                  <div className={`transition-all duration-500 ease-in-out overflow-hidden relative ${isAnalysisCollapsed ? 'max-h-[160px]' : 'max-h-[5000px]'}`}>
+                    {aiAnalysis[analysisKey] ? (
+                      <div className="prose prose-slate dark:prose-invert prose-sm md:prose-base max-w-none text-slate-700 dark:text-slate-300">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {aiAnalysis[analysisKey]}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div 
+                        className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base space-y-3 [&>p]:mb-2 [&_strong]:text-indigo-600 dark:[&_strong]:text-indigo-300" 
+                        dangerouslySetInnerHTML={{ __html: data.insights }} 
+                      />
+                    )}
+                    {isAnalysisCollapsed && (
+                      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-[#111827] to-transparent pointer-events-none z-10" />
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-center mt-4 relative z-20">
+                    <button
+                      onClick={() => setIsAnalysisCollapsed(!isAnalysisCollapsed)}
+                      className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-semibold transition-colors bg-slate-50 dark:bg-slate-900/60 px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm"
+                    >
+                      <span>{isAnalysisCollapsed ? 'Ver análisis completo' : 'Comprimir resumen'}</span>
+                      {isAnalysisCollapsed ? <ChevronDown className="w-4 h-4 animate-bounce" /> : <ChevronUp className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
               )}
               </div>
             </div>
