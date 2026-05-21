@@ -379,7 +379,7 @@ export async function GET() {
           momCostoDesc = costoGrowth <= 0 ? `<span class="text-emerald-600 font-semibold">${costoGrowth.toFixed(1)}%</span>` : `<span class="text-rose-600 font-semibold">+${costoGrowth.toFixed(1)}%</span>`;
         }
 
-        // Proyección usando los datos de PLAN presupuestados para todo el año
+        // Proyección de 3 meses usando los datos de PLAN presupuestados (dinámica)
         const fullMonthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const lastMonthIndex = validMonths.length > 0 ? monthSheets.indexOf(validMonths[validMonths.length - 1]) : -1;
         
@@ -388,8 +388,9 @@ export async function GET() {
         const nextEbitdaProy: number[] = [];
         const nextCostoProy: number[] = [];
 
-        const remainingMonthsCount = 12 - (lastMonthIndex + 1);
-        for (let i = 1; i <= remainingMonthsCount; i++) {
+        // Solo proyectar exactamente los siguientes 3 meses
+        const monthsToProject = 3;
+        for (let i = 1; i <= monthsToProject; i++) {
           const nextIdx = lastMonthIndex + i;
           if (nextIdx < 12) {
             nextLabels.push(`${fullMonthNames[nextIdx]} (Proy)`);
@@ -420,21 +421,24 @@ export async function GET() {
           ...nextEbitdaProy.map(() => '#cbd5e1') // slate-300
         ];
 
-        // Construir arrays de PLAN para gráficos globales (todos los 12 meses)
+        // Definir índices de meses visibles: real + 3 meses proyectados
+        const visibleMonthIdxs = monthSheets.map((_, idx) => idx).slice(0, lastMonthIndex + 4);
+
+        // Construir arrays de PLAN para gráficos globales (acoplados al tamaño visual)
         const trendPlanData = hasPlan && planData ? [
-          ...monthSheets.map((_, mIdx) => {
+          ...visibleMonthIdxs.map(mIdx => {
             return parseNumber(planData[planVentasRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
           })
         ] : undefined;
 
         const trendCostPlanData = hasPlan && planData ? [
-          ...monthSheets.map((_, mIdx) => {
+          ...visibleMonthIdxs.map(mIdx => {
             return parseNumber(planData[planCostoRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
           })
         ] : undefined;
 
         const compPlanData = hasPlan && planData ? [
-          ...monthSheets.map((_, mIdx) => {
+          ...visibleMonthIdxs.map(mIdx => {
             return parseNumber(planData[planEbitdaRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
           })
         ] : undefined;
@@ -447,10 +451,10 @@ export async function GET() {
         ] : undefined;
 
         const expensesPlan = hasPlan && planData ? {
-          sueldos: monthSheets.map((_, mIdx) => parseNumber(planData[planSueldosRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
-          energia: monthSheets.map((_, mIdx) => parseNumber(planData[planEnergiaRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
-          fletes: monthSheets.map((_, mIdx) => parseNumber(planData[planFletesRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
-          mant: monthSheets.map((_, mIdx) => parseNumber(planData[planMantRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000)
+          sueldos: visibleMonthIdxs.map(mIdx => parseNumber(planData[planSueldosRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
+          energia: visibleMonthIdxs.map(mIdx => parseNumber(planData[planEnergiaRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
+          fletes: visibleMonthIdxs.map(mIdx => parseNumber(planData[planFletesRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000),
+          mant: visibleMonthIdxs.map(mIdx => parseNumber(planData[planMantRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000)
         } : undefined;
 
         db[id].charts = {
@@ -484,26 +488,21 @@ export async function GET() {
             desc: `<strong>Estructura P&L y Rentabilidad YTD:</strong> ${getBenchmarkDesc(vtasNetas ? (ebitda/vtasNetas)*100 : 0, businessTypeMap[id] || 'Otros', isTotal)}`
           },
           expenses: {
-            labels: fullMonthNames,
+            labels: visibleMonthIdxs.map(mIdx => fullMonthNames[mIdx]),
             data: {
-              sueldos: [...monthlySueldos.map(v => v/1000), ...monthSheets.slice(validMonths.length).map((_, idx) => {
-                const mIdx = validMonths.length + idx;
+              sueldos: [...monthlySueldos.map(v => v/1000), ...visibleMonthIdxs.slice(validMonths.length).map(mIdx => {
                 return parseNumber(planData[planSueldosRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
               })],
-              energia: [...monthlyEnergia.map(v => v/1000), ...monthSheets.slice(validMonths.length).map((_, idx) => {
-                const mIdx = validMonths.length + idx;
+              energia: [...monthlyEnergia.map(v => v/1000), ...visibleMonthIdxs.slice(validMonths.length).map(mIdx => {
                 return parseNumber(planData[planEnergiaRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
               })],
-              fletes: [...monthlyFletes.map(v => v/1000), ...monthSheets.slice(validMonths.length).map((_, idx) => {
-                const mIdx = validMonths.length + idx;
+              fletes: [...monthlyFletes.map(v => v/1000), ...visibleMonthIdxs.slice(validMonths.length).map(mIdx => {
                 return parseNumber(planData[planFletesRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
               })],
-              mant: [...monthlyMant.map(v => v/1000), ...monthSheets.slice(validMonths.length).map((_, idx) => {
-                const mIdx = validMonths.length + idx;
+              mant: [...monthlyMant.map(v => v/1000), ...visibleMonthIdxs.slice(validMonths.length).map(mIdx => {
                 return parseNumber(planData[planMantRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
               })],
-              ventas: [...monthlyVentas.map(v => v/1000), ...monthSheets.slice(validMonths.length).map((_, idx) => {
-                const mIdx = validMonths.length + idx;
+              ventas: [...monthlyVentas.map(v => v/1000), ...visibleMonthIdxs.slice(validMonths.length).map(mIdx => {
                 return parseNumber(planData[planVentasRowIdx]?.[1 + (mIdx * 17) + buIndex]) / 1000;
               })]
             },
