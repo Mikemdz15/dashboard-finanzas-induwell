@@ -1218,7 +1218,11 @@ export default function Dashboard() {
                         <p className="text-xs text-slate-500 dark:text-indigo-400/80 italic font-medium">{kpi.avgDesc}</p>
                       )}
                       {kpi.planDesc && (
-                        <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 font-outfit">
+                        <p className={`text-xs font-semibold font-outfit ${
+                          kpi.planStatus === 'negative'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-emerald-600 dark:text-emerald-400'
+                        }`}>
                           {kpi.planDesc}
                         </p>
                       )}

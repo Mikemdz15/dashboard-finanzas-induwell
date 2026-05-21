@@ -210,19 +210,33 @@ export async function GET() {
           });
         }
 
-        const getPlanDesc = (realVal: number, planVal: number, isNeg = false) => {
-          if (!hasPlan) return '';
+        const getPlanInfo = (realVal: number, planVal: number, isNeg = false) => {
+          if (!hasPlan) return { text: '', status: 'positive' };
           const planM = planVal / 1000;
           let variation = 0;
+          let isFavorable = true;
           if (isNeg) {
             const realAbs = Math.abs(realVal);
             const planAbs = Math.abs(planVal);
             variation = planAbs !== 0 ? ((realAbs - planAbs) / planAbs) * 100 : 0;
+            isFavorable = variation <= 0; // Para costos/gastos, menor o igual al plan es favorable (verde)
           } else {
             variation = planVal !== 0 ? ((realVal - planVal) / Math.abs(planVal)) * 100 : 0;
+            isFavorable = variation >= 0; // Para ventas/ebitda, mayor o igual al plan es favorable (verde)
           }
           const sign = variation >= 0 ? '+' : '';
-          return `Plan: $${planM.toFixed(1)}M (Var: ${sign}${variation.toFixed(1)}%)`;
+          return {
+            text: `Plan: $${planM.toFixed(1)}M (Var: ${sign}${variation.toFixed(1)}%)`,
+            status: isFavorable ? 'positive' : 'negative'
+          };
+        };
+
+        const getPlanDesc = (realVal: number, planVal: number, isNeg = false) => {
+          return getPlanInfo(realVal, planVal, isNeg).text;
+        };
+
+        const getPlanStatus = (realVal: number, planVal: number, isNeg = false) => {
+          return getPlanInfo(realVal, planVal, isNeg).status;
         };
 
         // Extraer métricas mensuales dinámicas
@@ -295,10 +309,10 @@ export async function GET() {
             // Guardar vista aislada del mes con análisis clínico descriptivo
             monthlyDataDict[mSheet] = {
               kpis: [
-                { label: `Ventas ${prettyName}`, value: `$${(mVentas/1000).toFixed(1)}M`, sub: "Ventas Netas", trend: "up", trendVal: "Ref Sheet", avgDesc: `Promedio mensual anualizado: $${(avgVentas/1000).toFixed(1)}M`, planDesc: getPlanDesc(mVentas, planVentasMVal) },
-                { label: `Costo Total ${prettyName}`, value: `$${(mCosto/1000).toFixed(1)}M`, sub: "Costo Directo", trend: "down", trendVal: `${mVentas ? Math.abs((mCosto/mVentas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgCosto/1000).toFixed(1)}M`, planDesc: getPlanDesc(mCosto, planCostoMVal, true) },
-                { label: `Gastos ${prettyName}`, value: `$${(mGastos/1000).toFixed(1)}M`, sub: "Fijos + Variables", trend: "down", trendVal: `${mVentas ? Math.abs((mGastos/mVentas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgGastos/1000).toFixed(1)}M`, planDesc: getPlanDesc(mGastos, planGastosMVal, true) },
-                { label: `EBITDA ${prettyName}`, value: `$${(mUtilidad/1000).toFixed(1)}M`, sub: "Beneficio Operativo", trend: "up", trendVal: `${mVentas ? ((mUtilidad/mVentas)*100).toFixed(1) : 0}% Margen`, avgDesc: `Promedio mensual anualizado: $${(avgEbitda/1000).toFixed(1)}M`, planDesc: getPlanDesc(mUtilidad, planEbitdaMVal) }
+                { label: `Ventas ${prettyName}`, value: `$${(mVentas/1000).toFixed(1)}M`, sub: "Ventas Netas", trend: "up", trendVal: "Ref Sheet", avgDesc: `Promedio mensual anualizado: $${(avgVentas/1000).toFixed(1)}M`, planDesc: getPlanDesc(mVentas, planVentasMVal), planStatus: getPlanStatus(mVentas, planVentasMVal) },
+                { label: `Costo Total ${prettyName}`, value: `$${(mCosto/1000).toFixed(1)}M`, sub: "Costo Directo", trend: "down", trendVal: `${mVentas ? Math.abs((mCosto/mVentas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgCosto/1000).toFixed(1)}M`, planDesc: getPlanDesc(mCosto, planCostoMVal, true), planStatus: getPlanStatus(mCosto, planCostoMVal, true) },
+                { label: `Gastos ${prettyName}`, value: `$${(mGastos/1000).toFixed(1)}M`, sub: "Fijos + Variables", trend: "down", trendVal: `${mVentas ? Math.abs((mGastos/mVentas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgGastos/1000).toFixed(1)}M`, planDesc: getPlanDesc(mGastos, planGastosMVal, true), planStatus: getPlanStatus(mGastos, planGastosMVal, true) },
+                { label: `EBITDA ${prettyName}`, value: `$${(mUtilidad/1000).toFixed(1)}M`, sub: "Beneficio Operativo", trend: "up", trendVal: `${mVentas ? ((mUtilidad/mVentas)*100).toFixed(1) : 0}% Margen`, avgDesc: `Promedio mensual anualizado: $${(avgEbitda/1000).toFixed(1)}M`, planDesc: getPlanDesc(mUtilidad, planEbitdaMVal), planStatus: getPlanStatus(mUtilidad, planEbitdaMVal) }
               ],
               insights: `
                 <p><strong>Desempeño Operativo ${prettyName}:</strong> Se registraron ventas netas por $${mVentas.toLocaleString('es-MX')} MXN, con costos de $${mCosto.toLocaleString('es-MX')} y gastos de $${mGastos.toLocaleString('es-MX')}.</p>
@@ -342,10 +356,10 @@ export async function GET() {
           type: businessTypeMap[id] || (isTotal ? 'Consolidado' : 'Otros'),
           icon: isTotal ? "building-2" : "shopping-bag",
           kpis: [
-            { label: "Ventas YTD", value: `$${(vtasNetas/1000).toFixed(1)}M`, sub: "Ventas Netas Acum.", trend: "up", trendVal: "Ref Sheet", avgDesc: `Promedio mensual anualizado: $${(avgVentas/1000).toFixed(1)}M`, planDesc: getPlanDesc(vtasNetas, planVtasYtd) },
-            { label: "Costo Total YTD", value: `$${(totalCosto/1000).toFixed(1)}M`, sub: "Costo Directo", trend: "down", trendVal: `${vtasNetas ? Math.abs((totalCosto/vtasNetas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgCosto/1000).toFixed(1)}M`, planDesc: getPlanDesc(totalCosto, planCostoYtd, true) },
-            { label: "Gastos YTD", value: `$${(totalGastos/1000).toFixed(1)}M`, sub: "Fijos + Variables", trend: "down", trendVal: `${vtasNetas ? Math.abs((totalGastos/vtasNetas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgGastos/1000).toFixed(1)}M`, planDesc: getPlanDesc(totalGastos, planGastosYtd, true) },
-            { label: "EBITDA YTD", value: `$${(ebitda/1000).toFixed(1)}M`, sub: "Beneficio Operativo Bruto", trend: "up", trendVal: `${vtasNetas ? ((ebitda/vtasNetas)*100).toFixed(1) : 0}% Margen`, avgDesc: `Promedio mensual anualizado: $${(avgEbitda/1000).toFixed(1)}M`, planDesc: getPlanDesc(ebitda, planEbitdaYtd) }
+            { label: "Ventas YTD", value: `$${(vtasNetas/1000).toFixed(1)}M`, sub: "Ventas Netas Acum.", trend: "up", trendVal: "Ref Sheet", avgDesc: `Promedio mensual anualizado: $${(avgVentas/1000).toFixed(1)}M`, planDesc: getPlanDesc(vtasNetas, planVtasYtd), planStatus: getPlanStatus(vtasNetas, planVtasYtd) },
+            { label: "Costo Total YTD", value: `$${(totalCosto/1000).toFixed(1)}M`, sub: "Costo Directo", trend: "down", trendVal: `${vtasNetas ? Math.abs((totalCosto/vtasNetas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgCosto/1000).toFixed(1)}M`, planDesc: getPlanDesc(totalCosto, planCostoYtd, true), planStatus: getPlanStatus(totalCosto, planCostoYtd, true) },
+            { label: "Gastos YTD", value: `$${(totalGastos/1000).toFixed(1)}M`, sub: "Fijos + Variables", trend: "down", trendVal: `${vtasNetas ? Math.abs((totalGastos/vtasNetas)*100).toFixed(1) : 0}% s/Vtas`, avgDesc: `Promedio mensual anualizado: $${(avgGastos/1000).toFixed(1)}M`, planDesc: getPlanDesc(totalGastos, planGastosYtd, true), planStatus: getPlanStatus(totalGastos, planGastosYtd, true) },
+            { label: "EBITDA YTD", value: `$${(ebitda/1000).toFixed(1)}M`, sub: "Beneficio Operativo Bruto", trend: "up", trendVal: `${vtasNetas ? ((ebitda/vtasNetas)*100).toFixed(1) : 0}% Margen`, avgDesc: `Promedio mensual anualizado: $${(avgEbitda/1000).toFixed(1)}M`, planDesc: getPlanDesc(ebitda, planEbitdaYtd), planStatus: getPlanStatus(ebitda, planEbitdaYtd) }
           ],
           insights: `
             <p><strong>Resumen Automático:</strong> Los datos presentados provienen directamente de la fuente financiera oficial en Google Sheets.</p>
