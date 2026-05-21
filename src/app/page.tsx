@@ -668,15 +668,26 @@ export default function Dashboard() {
       {
         label: 'Proyección (M)',
         data: subsidiaryData.charts.trend.proy,
-        borderColor: themeColors.indigo,
+        borderColor: '#06b6d4', // Turquoise Blue
         borderDash: [5, 5],
         borderWidth: 3,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: themeColors.indigo,
+        pointBorderColor: '#06b6d4',
         pointRadius: 4,
         tension: 0.4
-      }
-    ]
+      },
+      subsidiaryData.charts.trend.plan ? {
+        label: 'Presupuesto Plan (M)',
+        data: subsidiaryData.charts.trend.plan,
+        borderColor: '#06b6d4', // Turquoise Blue
+        backgroundColor: 'rgba(6, 182, 212, 0.05)',
+        borderWidth: 2,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: '#06b6d4',
+        pointRadius: 4,
+        tension: 0.4
+      } : null
+    ].filter(Boolean) as any[]
   };
 
   // Calculation of labels with MoM for Trend Cost
@@ -712,15 +723,26 @@ export default function Dashboard() {
       {
         label: 'Proyección Costo (M)',
         data: subsidiaryData.charts.trendCost.proy,
-        borderColor: themeColors.amber,
+        borderColor: '#06b6d4', // Turquoise Blue
         borderDash: [5, 5],
         borderWidth: 3,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: themeColors.amber,
+        pointBorderColor: '#06b6d4',
         pointRadius: 4,
         tension: 0.4
-      }
-    ]
+      },
+      subsidiaryData.charts.trendCost.plan ? {
+        label: 'Presupuesto Plan (M)',
+        data: subsidiaryData.charts.trendCost.plan,
+        borderColor: '#06b6d4', // Turquoise Blue
+        backgroundColor: 'rgba(6, 182, 212, 0.05)',
+        borderWidth: 2,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: '#06b6d4',
+        pointRadius: 4,
+        tension: 0.4
+      } : null
+    ].filter(Boolean) as any[]
   } : null;
 
   const ebitdaLabelsWithMom = subsidiaryData.charts.composition.type !== 'doughnut' ? subsidiaryData.charts.composition.labels.map((label: string, idx: number) => {
@@ -770,27 +792,41 @@ export default function Dashboard() {
     }]
   } : {
     labels: ebitdaLabelsWithMom,
-    datasets: [{
-      label: 'EBITDA Mensual (M)',
-      data: subsidiaryData.charts.composition.data,
-      backgroundColor: (context: any) => {
-        let baseColor = subsidiaryData.charts.composition.colors ? subsidiaryData.charts.composition.colors[context.dataIndex] : (context.raw < 0 ? themeColors.rose : themeColors.emerald);
-        if (baseColor === '#f43f5e') baseColor = themeColors.rose;
-        else if (baseColor === '#10b981') baseColor = themeColors.emerald;
-        else if (baseColor === '#cbd5e1') baseColor = 'rgba(203, 213, 225, 1)';
-        const fade = baseColor.replace('1)', '0.1)');
-        return getBarGradient(context.chart.ctx, context.element, baseColor.replace('1)', '0.8)'), fade);
+    datasets: [
+      {
+        label: 'EBITDA Mensual (M)',
+        data: subsidiaryData.charts.composition.data,
+        backgroundColor: (context: any) => {
+          let baseColor = subsidiaryData.charts.composition.colors ? subsidiaryData.charts.composition.colors[context.dataIndex] : (context.raw < 0 ? themeColors.rose : themeColors.emerald);
+          if (baseColor === '#f43f5e') baseColor = themeColors.rose;
+          else if (baseColor === '#10b981') baseColor = themeColors.emerald;
+          else if (baseColor === '#cbd5e1') baseColor = 'rgba(6, 182, 212, 1)';
+          const fade = baseColor.replace('1)', '0.1)');
+          return getBarGradient(context.chart.ctx, context.element, baseColor.replace('1)', '0.8)'), fade);
+        },
+        hoverBackgroundColor: (context: any) => {
+          let baseColor = subsidiaryData.charts.composition.colors ? subsidiaryData.charts.composition.colors[context.dataIndex] : (context.raw < 0 ? themeColors.rose : themeColors.emerald);
+          if (baseColor === '#f43f5e') baseColor = themeColors.rose;
+          else if (baseColor === '#10b981') baseColor = themeColors.emerald;
+          else if (baseColor === '#cbd5e1') baseColor = 'rgba(6, 182, 212, 1)';
+          const fade = baseColor.replace('1)', '0.4)');
+          return getBarGradient(context.chart.ctx, context.element, baseColor, fade);
+        },
+        borderRadius: 6
       },
-      hoverBackgroundColor: (context: any) => {
-        let baseColor = subsidiaryData.charts.composition.colors ? subsidiaryData.charts.composition.colors[context.dataIndex] : (context.raw < 0 ? themeColors.rose : themeColors.emerald);
-        if (baseColor === '#f43f5e') baseColor = themeColors.rose;
-        else if (baseColor === '#10b981') baseColor = themeColors.emerald;
-        else if (baseColor === '#cbd5e1') baseColor = 'rgba(203, 213, 225, 1)';
-        const fade = baseColor.replace('1)', '0.4)');
-        return getBarGradient(context.chart.ctx, context.element, baseColor, fade);
-      },
-      borderRadius: 6
-    }]
+      subsidiaryData.charts.composition.plan ? {
+        type: 'line' as const,
+        label: 'Presupuesto Plan (M)',
+        data: subsidiaryData.charts.composition.plan,
+        borderColor: '#06b6d4', // Turquoise Blue
+        borderWidth: 2.5,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: '#06b6d4',
+        pointRadius: 4.5,
+        tension: 0.4,
+        fill: false
+      } : null
+    ].filter(Boolean) as any[]
   };
 
   const expSource = subsidiaryData.charts.expenses;
@@ -846,29 +882,50 @@ export default function Dashboard() {
         borderWidth: 1,
         borderRadius: 4,
         yAxisID: 'y'
-      }
-    ]
+      },
+      subsidiaryData.charts.expenses.plan ? {
+        type: 'line' as const,
+        label: `Presupuesto Plan (${activeExpense.toUpperCase()}) (M)`,
+        data: subsidiaryData.charts.expenses.plan[activeExpense],
+        borderColor: '#06b6d4', // Turquoise Blue
+        borderWidth: 2,
+        pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
+        pointBorderColor: '#06b6d4',
+        pointRadius: 4,
+        yAxisID: 'y',
+        tension: 0.4
+      } : null
+    ].filter(Boolean) as any[]
   };
 
   const pnlData = {
     labels: subsidiaryData.charts.pnl.labels,
-    datasets: [{
-      label: 'Acumulado YTD (M)',
-      data: subsidiaryData.charts.pnl.data,
-      backgroundColor: (context: any) => {
-        const val = context.raw;
-        const color = val < 0 ? themeColors.rose : themeColors.blue;
-        const fade = val < 0 ? 'rgba(244, 63, 94, 0.1)' : 'rgba(99, 102, 241, 0.1)';
-        return getBarGradient(context.chart.ctx, context.element, color.replace('1)', '0.8)'), fade);
+    datasets: [
+      {
+        label: 'Acumulado Real YTD (M)',
+        data: subsidiaryData.charts.pnl.data,
+        backgroundColor: (context: any) => {
+          const val = context.raw;
+          const color = val < 0 ? themeColors.rose : themeColors.blue;
+          const fade = val < 0 ? 'rgba(244, 63, 94, 0.1)' : 'rgba(99, 102, 241, 0.1)';
+          return getBarGradient(context.chart.ctx, context.element, color.replace('1)', '0.8)'), fade);
+        },
+        hoverBackgroundColor: (context: any) => {
+          const val = context.raw;
+          const color = val < 0 ? themeColors.rose : themeColors.blue;
+          const fade = val < 0 ? 'rgba(244, 63, 94, 0.4)' : 'rgba(99, 102, 241, 0.4)';
+          return getBarGradient(context.chart.ctx, context.element, color, fade);
+        },
+        borderRadius: 6
       },
-      hoverBackgroundColor: (context: any) => {
-        const val = context.raw;
-        const color = val < 0 ? themeColors.rose : themeColors.blue;
-        const fade = val < 0 ? 'rgba(244, 63, 94, 0.4)' : 'rgba(99, 102, 241, 0.4)';
-        return getBarGradient(context.chart.ctx, context.element, color, fade);
-      },
-      borderRadius: 6
-    }]
+      subsidiaryData.charts.pnl.plan ? {
+        label: 'Presupuesto Plan (M)',
+        data: subsidiaryData.charts.pnl.plan,
+        backgroundColor: '#06b6d4', // Turquoise Blue
+        hoverBackgroundColor: '#0891b2',
+        borderRadius: 6
+      } : null
+    ].filter(Boolean) as any[]
   };
 
   const commonOptions = {
@@ -1154,9 +1211,16 @@ export default function Dashboard() {
                       <span className="ml-1 text-slate-700 dark:text-slate-300 text-xs">{kpi.trendVal}</span>
                     </div>
                   </div>
-                  {kpi.avgDesc && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 relative z-10">
-                      <p className="text-xs text-slate-500 dark:text-indigo-400/80 italic font-medium">{kpi.avgDesc}</p>
+                  {(kpi.avgDesc || kpi.planDesc) && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 relative z-10 space-y-1">
+                      {kpi.avgDesc && (
+                        <p className="text-xs text-slate-500 dark:text-indigo-400/80 italic font-medium">{kpi.avgDesc}</p>
+                      )}
+                      {kpi.planDesc && (
+                        <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 font-outfit">
+                          {kpi.planDesc}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
