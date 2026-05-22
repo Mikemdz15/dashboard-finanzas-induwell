@@ -680,13 +680,19 @@ export default function Dashboard() {
       subsidiaryData.charts.trend.plan ? {
         label: 'Presupuesto Plan (M)',
         data: subsidiaryData.charts.trend.plan,
-        borderColor: '#06b6d4', // Turquoise Blue
+        borderColor: '#06b6d4', // Fallback
         backgroundColor: 'rgba(6, 182, 212, 0.05)',
         borderWidth: 2,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: '#06b6d4',
+        pointBorderColor: subsidiaryData.charts.trend.plan.map((_: any, idx: number) => 
+          idx < subsidiaryData.availableMonths.length ? '#f97316' : '#06b6d4'
+        ),
         pointRadius: 4,
-        tension: 0.4
+        tension: 0.4,
+        segment: {
+          borderColor: (ctx: any) => 
+            ctx.p0DataIndex < subsidiaryData.availableMonths.length - 1 ? '#f97316' : '#06b6d4'
+        }
       } : null
     ].filter(Boolean) as any[]
   };
@@ -735,13 +741,19 @@ export default function Dashboard() {
       subsidiaryData.charts.trendCost.plan ? {
         label: 'Presupuesto Plan (M)',
         data: subsidiaryData.charts.trendCost.plan,
-        borderColor: '#06b6d4', // Turquoise Blue
+        borderColor: '#06b6d4', // Fallback
         backgroundColor: 'rgba(6, 182, 212, 0.05)',
         borderWidth: 2,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: '#06b6d4',
+        pointBorderColor: subsidiaryData.charts.trendCost.plan.map((_: any, idx: number) => 
+          idx < subsidiaryData.availableMonths.length ? '#f97316' : '#06b6d4'
+        ),
         pointRadius: 4,
-        tension: 0.4
+        tension: 0.4,
+        segment: {
+          borderColor: (ctx: any) => 
+            ctx.p0DataIndex < subsidiaryData.availableMonths.length - 1 ? '#f97316' : '#06b6d4'
+        }
       } : null
     ].filter(Boolean) as any[]
   } : null;
@@ -819,13 +831,19 @@ export default function Dashboard() {
         type: 'line' as const,
         label: 'Presupuesto Plan (M)',
         data: subsidiaryData.charts.composition.plan,
-        borderColor: '#06b6d4', // Turquoise Blue
+        borderColor: '#06b6d4', // Fallback
         borderWidth: 2.5,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: '#06b6d4',
+        pointBorderColor: subsidiaryData.charts.composition.plan.map((_: any, idx: number) => 
+          idx < subsidiaryData.availableMonths.length ? '#f97316' : '#06b6d4'
+        ),
         pointRadius: 4.5,
         tension: 0.4,
-        fill: false
+        fill: false,
+        segment: {
+          borderColor: (ctx: any) => 
+            ctx.p0DataIndex < subsidiaryData.availableMonths.length - 1 ? '#f97316' : '#06b6d4'
+        }
       } : null
     ].filter(Boolean) as any[]
   };
@@ -888,13 +906,19 @@ export default function Dashboard() {
         type: 'line' as const,
         label: `Presupuesto Plan (${activeExpense.toUpperCase()}) (M)`,
         data: subsidiaryData.charts.expenses.plan[activeExpense],
-        borderColor: '#06b6d4', // Turquoise Blue
+        borderColor: '#06b6d4', // Fallback
         borderWidth: 2,
         pointBackgroundColor: isDarkMode ? '#0B0F19' : '#ffffff',
-        pointBorderColor: '#06b6d4',
+        pointBorderColor: subsidiaryData.charts.expenses.plan[activeExpense].map((_: any, idx: number) => 
+          idx < subsidiaryData.availableMonths.length ? '#f97316' : '#06b6d4'
+        ),
         pointRadius: 4,
         yAxisID: 'y',
-        tension: 0.4
+        tension: 0.4,
+        segment: {
+          borderColor: (ctx: any) => 
+            ctx.p0DataIndex < subsidiaryData.availableMonths.length - 1 ? '#f97316' : '#06b6d4'
+        }
       } : null
     ].filter(Boolean) as any[]
   };
