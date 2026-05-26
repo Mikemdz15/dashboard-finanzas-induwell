@@ -1106,12 +1106,12 @@ export default function Dashboard() {
       
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-white dark:bg-[#111827]/95 backdrop-blur-md border-r border-slate-200 dark:border-slate-800 flex-col hidden md:flex z-20 shadow-sm dark:shadow-xl overflow-y-auto relative transition-colors duration-300">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 relative z-10 flex items-center space-x-3">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 relative z-10 flex flex-col items-center text-center">
           <div className="hidden dark:block absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 blur-[50px] pointer-events-none rounded-full"></div>
-          <img src="/logo.jpg" alt="Logo Induwell" className="w-12 h-12 rounded-full object-cover border-2 border-indigo-500 dark:border-indigo-400 shadow-sm" />
+          <img src="/logo.jpg" alt="Logo Induwell" className="w-16 h-16 rounded-full object-cover border-2 border-indigo-500 dark:border-indigo-400 shadow-md mb-3 transition-transform duration-300 hover:scale-105" />
           <div className="flex flex-col">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">Inteligencia</span>
-            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mt-0.5">Financiera</p>
+            <span className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-white leading-tight">Inteligencia</span>
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold uppercase tracking-widest mt-1">Financiera</p>
           </div>
         </div>
         <div className="flex-1 py-4 space-y-1 relative z-10">
@@ -1588,14 +1588,15 @@ export default function Dashboard() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-slate-900/50 z-40 md:hidden flex">
           <div className="bg-white w-64 h-full shadow-xl flex flex-col">
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <img src="/logo.jpg" alt="Logo Induwell" className="w-10 h-10 rounded-full object-cover border border-indigo-500 shadow-sm" />
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inteligencia Financiera</span>
-              </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="text-slate-500">
+            <div className="p-6 border-b border-slate-200 flex flex-col items-center text-center relative">
+              <button onClick={() => setMobileMenuOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-slate-800">
                 <X />
               </button>
+              <img src="/logo.jpg" alt="Logo Induwell" className="w-14 h-14 rounded-full object-cover border-2 border-indigo-500 shadow-md mb-3" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800 leading-tight">Inteligencia</span>
+                <p className="text-[10px] text-indigo-600 font-extrabold uppercase tracking-wider mt-0.5">Financiera</p>
+              </div>
             </div>
             <div className="overflow-y-auto flex-1 py-4 space-y-1">
               {navItems}
