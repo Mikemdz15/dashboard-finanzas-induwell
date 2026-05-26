@@ -1106,10 +1106,13 @@ export default function Dashboard() {
       
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-white dark:bg-[#111827]/95 backdrop-blur-md border-r border-slate-200 dark:border-slate-800 flex-col hidden md:flex z-20 shadow-sm dark:shadow-xl overflow-y-auto relative transition-colors duration-300">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 relative z-10">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 relative z-10 flex items-center space-x-3">
           <div className="hidden dark:block absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 blur-[50px] pointer-events-none rounded-full"></div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-outfit">INDUWELL</h1>
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium uppercase tracking-wider mt-1">Inteligencia Financiera</p>
+          <img src="/logo.jpg" alt="Logo Induwell" className="w-12 h-12 rounded-full object-cover border-2 border-indigo-500 dark:border-indigo-400 shadow-sm" />
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">Corporativo</span>
+            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mt-0.5">Inteligencia IA</p>
+          </div>
         </div>
         <div className="flex-1 py-4 space-y-1 relative z-10">
           {navItems}
@@ -1586,7 +1589,10 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-slate-900/50 z-40 md:hidden flex">
           <div className="bg-white w-64 h-full shadow-xl flex flex-col">
             <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">INDUWELL</h1>
+              <div className="flex items-center space-x-2">
+                <img src="/logo.jpg" alt="Logo Induwell" className="w-10 h-10 rounded-full object-cover border border-indigo-500 shadow-sm" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Corporativo</span>
+              </div>
               <button onClick={() => setMobileMenuOpen(false)} className="text-slate-500">
                 <X />
               </button>
