@@ -1361,8 +1361,8 @@ export default function Dashboard() {
                   <h3 className="text-base font-semibold text-slate-800 dark:text-white font-outfit tracking-wide">Tendencia de Ventas</h3>
                   <TrendingUp className="text-slate-400 dark:text-slate-500 w-5 h-5" />
                 </div>
-                <div className="relative flex-1 z-10" style={{ minHeight: '300px' }}>
-                  <Line data={trendData} options={momTickOptions as any} />
+                <div className="relative z-10 overflow-hidden" style={{ height: '300px' }}>
+                  <Line key={`${activeTab}_${selectedPeriod}_trend`} data={trendData} options={momTickOptions as any} />
                 </div>
                 <div className="mt-4 p-3 bg-slate-50 dark:bg-[#1E293B] rounded-lg border border-slate-100 dark:border-slate-700/50 relative z-10">
                   <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed [&_strong]:text-indigo-600 dark:[&_strong]:text-indigo-300" dangerouslySetInnerHTML={{ __html: subsidiaryData.charts.trend.desc }} />
@@ -1393,8 +1393,8 @@ export default function Dashboard() {
                     <h3 className="text-base font-semibold text-slate-800 dark:text-white font-outfit tracking-wide">Tendencia de Costo de Ventas</h3>
                     <TrendingUp className="text-slate-400 dark:text-slate-500 w-5 h-5" />
                   </div>
-                  <div className="relative flex-1 z-10" style={{ minHeight: '300px' }}>
-                    <Line data={trendCostData} options={momTickOptions as any} />
+                  <div className="relative z-10 overflow-hidden" style={{ height: '300px' }}>
+                    <Line key={`${activeTab}_${selectedPeriod}_trendCost`} data={trendCostData} options={momTickOptions as any} />
                   </div>
                   <div className="mt-4 p-3 bg-slate-50 dark:bg-[#1E293B] rounded-lg border border-slate-100 dark:border-slate-700/50 relative z-10">
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed [&_strong]:text-rose-600 dark:[&_strong]:text-rose-400" dangerouslySetInnerHTML={{ __html: subsidiaryData.charts.trendCost.desc }} />
@@ -1422,11 +1422,11 @@ export default function Dashboard() {
               <div className="bg-white dark:bg-[#111827] rounded-xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col relative overflow-hidden transition-colors duration-300">
                 <div className="hidden dark:block absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[60px] pointer-events-none rounded-full"></div>
                 <h3 className="text-base font-semibold text-slate-800 dark:text-white font-outfit tracking-wide mb-4 relative z-10">{subsidiaryData.charts.composition.title}</h3>
-                <div className="relative flex-1 z-10" style={{ minHeight: '300px' }}>
+                <div className="relative z-10 overflow-hidden" style={{ height: '300px' }}>
                   {subsidiaryData.charts.composition.type === 'doughnut' ? (
-                     <Doughnut data={compData as any} options={{...commonOptions, scales: { x: { display: false }, y: { display: false } }, cutout: '65%'}} />
+                     <Doughnut key={`${activeTab}_${selectedPeriod}_comp`} data={compData as any} options={{...commonOptions, scales: { x: { display: false }, y: { display: false } }, cutout: '65%'}} />
                   ) : (
-                     <Bar data={compData as any} options={{...momTickOptions, plugins: { ...momTickOptions.plugins, legend: { display: false } }} as any} />
+                     <Bar key={`${activeTab}_${selectedPeriod}_comp`} data={compData as any} options={{...momTickOptions, plugins: { ...momTickOptions.plugins, legend: { display: false } }} as any} />
                   )}
                 </div>
                 <div className="mt-4 p-3 bg-slate-50 dark:bg-[#1E293B] rounded-lg border border-slate-100 dark:border-slate-700/50 relative z-10">
@@ -1458,8 +1458,8 @@ export default function Dashboard() {
                 <h3 className="text-base font-semibold text-slate-800 dark:text-white font-outfit tracking-wide">Estructura P&L (Miles)</h3>
                 <BarChart3 className="text-slate-400 dark:text-slate-500 w-5 h-5" />
               </div>
-              <div className="relative z-10" style={{ height: '250px' }}>
-                <Bar data={pnlData} options={{...commonOptions, plugins: { ...commonOptions.plugins, legend: { display: false } }} as any} />
+              <div className="relative z-10 overflow-hidden" style={{ height: '250px' }}>
+                <Bar key={`${activeTab}_${selectedPeriod}_pnl`} data={pnlData} options={{...commonOptions, plugins: { ...commonOptions.plugins, legend: { display: false } }} as any} />
               </div>
               <div className="mt-4 p-3 bg-slate-50 dark:bg-[#1E293B] rounded-lg border border-slate-100 dark:border-slate-700/50 relative z-10">
                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed [&_strong]:text-indigo-600 dark:[&_strong]:text-indigo-300" dangerouslySetInnerHTML={{ __html: subsidiaryData.charts.pnl.desc }} />
@@ -1512,8 +1512,8 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              <div className="relative z-10 w-full" style={{ height: '300px' }}>
-                <Bar data={expensesData as any} options={expensesOptions as any} />
+              <div className="relative z-10 w-full overflow-hidden" style={{ height: '300px' }}>
+                <Bar key={`${activeTab}_${selectedPeriod}_expenses_${activeExpense}`} data={expensesData as any} options={expensesOptions as any} />
               </div>
               
               <div className="mt-6 overflow-x-auto relative z-10">
